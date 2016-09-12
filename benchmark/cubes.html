@@ -30,19 +30,24 @@
 		<text id="NUMBOXES_ID">Number of objects:</text>
 		
 		<!-- slider objects -->
-		<label for="slider">Target:</label>
 		<input type="range" name="slider" id="FPSSLIDE_ID" min="0" max="60" value="50" 
 				style="position: absolute; top:75px; left:20px" onchange="fpsUpdate(value);">
-		
+        
+        <input type="number" name="startVal" id="STARTVAL_ID" value="500"
+				style="width:70px; position: absolute; top:125px; left:20px">
+        
+        <input type="button" name="toggle" id="TOGGLE_ID" value="On/Off" 
+				style="position: absolute; top:125px; left:110px" onclick="toggle();">
+        
 		
 		<script>
 
-		var numObjects = 2000;			//max objects
+		var numObjects = 20000;			//max objects
 		var targetFPS = 50;			//highest fps before adding objects
 		var varyFPS = targetFPS / 10;		//allowed range of FPS
 		var lowestFPS = targetFPS - varyFPS;	//lowest FPS before taking out objects
-		var startVal = 50;			//starting object number
-		var removeNum = startVal;		//mesh array position, for removing objects
+		var startVal; // = 500;			//starting object number
+		var removeNum; // = startVal;		//mesh array position, for removing objects
 		var container, stats;
 		var camera, scene, renderer;
 		var geometry, material, material2;
@@ -51,22 +56,45 @@
 		var addFlag = 0;			// -1 = remove, 1 = add, 0 = nothing
 		var waitFrames = 0;			// wait time between adding/removing objects
 		var waitTime = 10;			// amount of frames to wait
+        var frame;
 		
-		
-		
-		// Check that browser supports WebGL, else exit nicely
-		if (Detector.webgl) {
-			setupTextBox();
-			init();
-			animate();
-		} else {	
-			var warning = Detector.getWebGLErrorMessage();
-			document.getElementById('container').appendChild(warning);
-		}   
+        // Check that browser supports WebGL, else exit nicely
+        if (Detector.webgl) {
+            setupTextBox();
+        } else {	
+            var warning = Detector.getWebGLErrorMessage();
+            document.getElementById('container').appendChild(warning);
+        }          
+            
+        function toggle()
+        {
+            if (container) {
+                cancelAnimationFrame(frame);
+                
+                container.parentElement.removeChild(container);
+                container = undefined;
+                
+                document.body.removeChild( stats.getDomElement() );
+                stats = undefined;
+            } else {
+                
+                startVal = parseInt(document.getElementById('STARTVAL_ID').value);
+                removeNum = startVal;
+                
+                //add stats
+                stats = new Stats();
+                document.body.appendChild( stats.getDomElement() );
+			    
+                init();
+                animate();
+            }
+        }
 
 		function init() 
 		{
-			container = document.createElement( 'div' );
+			container = document.createElement( 'canvas', 'container' );
+            container.setAttribute( 'width', window.innerWidth);
+            container.setAttribute( 'height', window.innerHeight);
 			document.body.appendChild( container );
 		
 			camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -135,25 +163,14 @@
 			pointLight.position.y = 50;
 			pointLight.position.z = 130;
 			
-			renderer = new THREE.WebGLRenderer();
-			renderer.setSize( window.innerWidth, window.innerHeight );
-
+			renderer = new THREE.WebGLRenderer( {canvas: container} );
 			document.body.appendChild( renderer.domElement );
-			
-			//add stats
-			stats = new Stats();
-			
-			//add statistics object
-			stats.getDomElement().style.position = 'absolute';
-			stats.getDomElement().style.left = '0px';
-			stats.getDomElement().style.top = '0px';
-			document.body.appendChild( stats.getDomElement() );
 		}
 
 		function animate() 
 		{
 			// note: three.js includes requestAnimationFrame shim
-			requestAnimationFrame( animate );
+			frame = requestAnimationFrame( animate );
 			
 			//fps meter update
 			stats.update();
